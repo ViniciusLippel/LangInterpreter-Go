@@ -1,6 +1,8 @@
 package lexer
 
-import "Interpreter/token"
+import (
+	"Interpreter/token"
+)
 
 type Lexer struct {
 	input        string
@@ -86,6 +88,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.LBRACE, l.ch)
 	case '}':
 		tok = newToken(token.RBRACE, l.ch)
+	case '"':
+
 	case 0:
 		tok.Literal = ""
 		tok.Type = token.EOF
@@ -95,8 +99,13 @@ func (l *Lexer) NextToken() token.Token {
 			tok.Type = token.LookupIdent(tok.Literal)
 			return tok
 		} else if isDigit(l.ch) { //Number
-			tok.Type = token.INT
-			tok.Literal = l.readNumber()
+			fl, lit := l.readNumber()
+			if !fl {
+				tok.Type = token.INT
+			} else {
+				tok.Type = token.FLOAT
+			}
+			tok.Literal = lit
 			return tok
 		} else { //Illegal statement
 			tok = newToken(token.ILLEGAL, l.ch)
@@ -124,12 +133,20 @@ func (l *Lexer) readIdentifier() string {
 
 //Read a number
 //UPDATE NEEDED: float numbers need to be recognizible
-func (l *Lexer) readNumber() string {
+func (l *Lexer) readNumber() (bool, string) {
 	position := l.position
+	var fl bool = false
 	for isDigit(l.ch) {
 		l.readChar()
 	}
-	return l.input[position:l.position]
+	if l.ch == '.' {
+		l.readChar()
+		fl = true
+		for isDigit(l.ch) {
+			l.readChar()
+		}
+	}
+	return fl, l.input[position:l.position]
 }
 
 //Skip/eat/consume whitespaces
